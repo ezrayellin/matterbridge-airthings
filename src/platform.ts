@@ -1,7 +1,6 @@
 import { AirthingsClient, type SensorResult, SensorUnits } from 'airthings-consumer-api';
 import { MatterbridgeEndpoint, MatterbridgeDynamicPlatform, type PlatformConfig, type PlatformMatterbridge, airQualitySensor, bridgedNode, humiditySensor, temperatureSensor } from 'matterbridge';
 import { AnsiLogger } from 'matterbridge/logger';
-import { AirQualityServer } from 'matterbridge/matter/behaviors';
 import { AirQuality, CarbonDioxideConcentrationMeasurement, ConcentrationMeasurement, Pm1ConcentrationMeasurement, Pm25ConcentrationMeasurement, PowerSource, RadonConcentrationMeasurement, RelativeHumidityMeasurement, TemperatureMeasurement, TotalVolatileOrganicCompoundsConcentrationMeasurement } from 'matterbridge/matter/clusters';
 
 export class AirthingsPlatform extends MatterbridgeDynamicPlatform {
@@ -116,9 +115,9 @@ export class AirthingsPlatform extends MatterbridgeDynamicPlatform {
                 if (endpoint) {
                     this.log.debug(`Refreshing sensors for ${device.serialNumber}:`, device);
 
-                    const tempEndpoint = endpoint.getChildEndpointByName('Temperature');
-                    const humidityEndpoint = endpoint.getChildEndpointByName('Humidity');
-                    const airQualityEndpoint = endpoint.getChildEndpointByName('AirQuality');
+                    const tempEndpoint = endpoint.getChildEndpointById('Temperature');
+                    const humidityEndpoint = endpoint.getChildEndpointById('Humidity');
+                    const airQualityEndpoint = endpoint.getChildEndpointById('AirQuality');
                     await airQualityEndpoint?.setAttribute(AirQuality.Cluster.id, 'airQuality', this.#getAirQuality(device), endpoint.log);
 
                     const batteryPercentage = device.batteryPercentage;
@@ -251,9 +250,3 @@ export class AirthingsPlatform extends MatterbridgeDynamicPlatform {
         return aq;
     }
 }
-
-MatterbridgeEndpoint.prototype.createDefaultAirQualityClusterServer = function (airQuality = AirQuality.AirQualityEnum.Unknown): MatterbridgeEndpoint {
-    // @ts-expect-error exactOptionalPropertyTypes
-    this.behaviors.require(AirQualityServer.with(AirQuality.Feature.Fair), { airQuality });
-    return this;
-};
