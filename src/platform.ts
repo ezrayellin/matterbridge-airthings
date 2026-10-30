@@ -1,6 +1,7 @@
 import { AirthingsClient, type SensorResult, SensorUnits } from 'airthings-consumer-api';
 import { MatterbridgeEndpoint, MatterbridgeDynamicPlatform, type PlatformConfig, type PlatformMatterbridge, airQualitySensor, bridgedNode, humiditySensor, temperatureSensor } from 'matterbridge';
 import { AnsiLogger } from 'matterbridge/logger';
+import { AirQualityServer } from 'matterbridge/matter/behaviors';
 import { AirQuality, CarbonDioxideConcentrationMeasurement, ConcentrationMeasurement, Pm1ConcentrationMeasurement, Pm25ConcentrationMeasurement, PowerSource, RadonConcentrationMeasurement, RelativeHumidityMeasurement, TemperatureMeasurement, TotalVolatileOrganicCompoundsConcentrationMeasurement } from 'matterbridge/matter/clusters';
 
 export class AirthingsPlatform extends MatterbridgeDynamicPlatform {
@@ -86,8 +87,10 @@ export class AirthingsPlatform extends MatterbridgeDynamicPlatform {
                 .createDefaultRelativeHumidityMeasurementClusterServer(humidity ? humidity.value * 100 : undefined)
                 .addRequiredClusterServers();
 
-            endpoint.addChildDeviceType('AirQuality', airQualitySensor)
-                .createDefaultAirQualityClusterServer(this.#getAirQuality(deviceSensors))
+            const airQualityEndpoint = endpoint.addChildDeviceType('AirQuality', airQualitySensor);
+            // Airthings rates air quality as good, fair or poor, so Fair is the only level feature declared.
+            airQualityEndpoint.behaviors.require(AirQualityServer.with(AirQuality.Feature.Fair), { airQuality: this.#getAirQuality(deviceSensors) });
+            airQualityEndpoint
                 .createDefaultCarbonDioxideConcentrationMeasurementClusterServer(co2?.value, ConcentrationMeasurement.MeasurementUnit.Ppm, ConcentrationMeasurement.MeasurementMedium.Air)
                 .createDefaultPm1ConcentrationMeasurementClusterServer(pm1?.value, ConcentrationMeasurement.MeasurementUnit.Ugm3, ConcentrationMeasurement.MeasurementMedium.Air)
                 .createDefaultPm25ConcentrationMeasurementClusterServer(pm25?.value, ConcentrationMeasurement.MeasurementUnit.Ugm3, ConcentrationMeasurement.MeasurementMedium.Air)
